@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Options</title>
+  <style>
+    body { width:600px; height:200px; font-size:90%; }
+    table { border-collapse:collapse; width: 100%; }
+    td { text-align:left; padding: 8px; }
+    tr:nth-child(even) { background-color:#f2f2f2; }
+    input { width:100%; font-family: "Consolas, monospace"; }
+    #save { width:50%; vertical-align:middle }
+    #key_type { width:90% }
+    #toggle { width:16px; height:16px; float:right; box-shadow: #000 }
+  </style>
+</head>
+<body>
+  <table>
+    <colgroup>
+      <col style="width:25%">
+      <col style="width:75%">
+    </colgroup>
+    <tbody>
+      <tr>
+        <td><label for="author">Author:</label></th>
+        <td><input type="text" id="author" /></th>
+      </tr>
+      <tr>
+        <td><label for="posting_key">Posting Key:</label></td>
+        <td>
+          <input type="password" id="posting_key" />
+          <div style="padding:8px 0px 0px 8px">
+            <code id="key_type"> </code>
+            <input type="image" src="./icons/toggleInvisible.png" id="toggle" />
+            <input type="hidden" id="hidden" value="false" />
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td><label for="weight">Default Weight (%):</label></td>
+        <td><input type="number" id="weight" value="60" /></td>
+      </tr>
+      <tr>
+          <td><input type="button" id="save" value="Save" /></td>
+          <td><pre id="std"></pre></td>
+        </tr>
+      </tbody>
+  </table>
+  <script src="./steem.min.js"></script>
+  <script src="./preference.js"></script>
+  <script src="./aes.js"></script>
+  <script src="./options.js"></script>
+</body>
+</html>

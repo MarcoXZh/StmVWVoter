@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!--
+      - JavaScript and HTML must be in separate files: see our Content Security
+      - Policy documentation[1] for details and explanation.
+      -
+      - [1]: https://developer.chrome.com/extensions/contentSecurityPolicy
+    -->
+    <style>
+        body { width: 150px }
+        #pgs { vertical-align:middle; width:40% }
+        #num { vertical-align:middle; width:25% }
+        #vote  { vertical-align:middle; width:25% }
+        #std { color:black; }
+    </style>
+</head>
+<body>
+    <div>
+        <input id="pgs" type="range" min="1" max="100" />
+        <input id="num" type="number" min="0" max="100" size="3" />
+        <span class="sep"> </span>
+        <input type="button" id="vote" value="vote" />
+    </div>
+    <hr>
+    <div>
+        <!--p>Output:</span-->
+        <pre id="std"> </pre>
+    </div>
+    <hr>
+    <div>
+        <input id="option" type="button" value="Options" />
+        <code id="stdOp"> </code>
+    </div>
+
+    <script src="./steem.min.js"></script>
+    <script src="./preference.js"></script>
+    <script src="./aes.js"></script>
+    <script src="./popup.js"></script>
+</body>
+</html>
