@@ -8,11 +8,12 @@
       - [1]: https://developer.chrome.com/extensions/contentSecurityPolicy
     -->
     <style>
-        body { width: 150px }
+        body { width:400px }
         #pgs { vertical-align:middle; width:40% }
         #num { vertical-align:middle; width:25% }
         #vote  { vertical-align:middle; width:25% }
         #std { color:black; }
+        th { cursor:pointer }
     </style>
 </head>
 <body>
@@ -26,14 +27,16 @@
     <div>
         <!--p>Output:</span-->
         <pre id="std"> </pre>
-    </div>
-    <hr>
-    <div>
         <input id="option" type="button" value="Options" />
         <code id="stdOp"> </code>
     </div>
+    <hr>
+    <p>Click column name to sort by this column</p>
+    <table id="table" />
+    <input id="votes" type="hidden" value="" />
 
     <script src="./steem.min.js"></script>
+    <script src="./natsort.min.js"></script>
     <script src="./preference.js"></script>
     <script src="./aes.js"></script>
     <script src="./popup.js"></script>

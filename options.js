@@ -41,18 +41,18 @@ var decrypt = function(encrypted, password) {
 
 // Save Options
 document.getElementById('save').addEventListener('click', function() {
-    var author = document.getElementById('author');
+    var voter = document.getElementById('voter');
     var posting_key = document.getElementById('posting_key');
     var weight = document.getElementById('weight');
 
-    // Verify author name
-    var valAuthor = author.value.trim();
-    if (valAuthor === '') {
+    // Verify voter name
+    var valVoter = voter.value.trim();
+    if (valVoter === '') {
         std.style.color = 'red';
-        std.innerHTML = 'Invalid author: empty';
-        author.focus();
+        std.innerHTML = 'Invalid voter: empty';
+        voter.focus();
         return ;
-    } // if (valAuthor === '')
+    } // if (valVoter === '')
 
     // Verify posting key
     var valKey = posting_key.value.trim();
@@ -72,14 +72,14 @@ document.getElementById('save').addEventListener('click', function() {
     var valWeight = parseFloat(weight.value.trim());
     if (valWeight < 0 || valWeight > 100) {
         std.style.color = 'red';
-        std.innerHTML = 'Invalid author: empty';
+        std.innerHTML = 'Invalid voter: empty';
         weight.focus();
         return ;
     } // if (valWeight < 0 || valWeight > 100)
 
     // Now save
     chrome.storage.sync.set({
-                                author:         valAuthor,
+                                voter:          valVoter,
                                 posting_key:    encrypt(valKey, prefs.password),
                                 weight:         valWeight
                             }, function() {
@@ -92,12 +92,12 @@ document.getElementById('save').addEventListener('click', function() {
 // Restore options
 document.addEventListener('DOMContentLoaded', function() {
     chrome.storage.sync.get({
-                                author:         '',
+                                voter:          '',
                                 posting_key:    '',
                                 weight:         '60'
                             }, function(re) {
         re.posting_key = decrypt(re.posting_key, prefs.password)
-        document.getElementById('author').value = re.author;
+        document.getElementById('voter').value = re.voter;
         document.getElementById('posting_key').value = re.posting_key;
         document.getElementById('weight').value = re.weight;
         if (re.weight === '' || re.posting_key === '') {
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } // if (re.weight === '' || re.posting_key === '')
 
         // Verify the key
-        steem.api.getAccounts([re.author], function(err, res) {
+        steem.api.getAccounts([re.voter], function(err, res) {
             if (err) {
                 std.style.color = 'red';
                 var msgs = [err.data.message].concat(err.data.stack.map( (e)=>e.format ));
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 std.innerHTML = err;
             } // try - catch (err)
 
-        }); // steem.api.getAccounts([re.author], function(err, res) { ... });
+        }); // steem.api.getAccounts([re.voter], function(err, res) { ... });
     }); // chrome.storage.sync.get({ ... }, function(re) { ... });
 }); // document.addEventListener('DOMContentLoaded', function() { ... });
 
@@ -143,9 +143,9 @@ document.getElementById('toggle').addEventListener('click', function() {
 
 // Verify posting key
 document.getElementById('posting_key').addEventListener('input', function() {
-    var valAuthor = document.getElementById('author').value.trim();
+    var valVoter = document.getElementById('voter').value.trim();
     var valKey = this.value.trim();
-    steem.api.getAccounts([valAuthor], function(err, res) {
+    steem.api.getAccounts([valVoter], function(err, res) {
         if (err) {
             std.style.color = 'red';
             var msgs = [err.data.message].concat(err.data.stack.map( (e)=>e.format ));
@@ -193,5 +193,5 @@ document.getElementById('posting_key').addEventListener('input', function() {
             hidden.value = "false";
         } // try - catch (err)
 
-    }); // steem.api.getAccounts([valAuthor], function(err, res) { ... });
+    }); // steem.api.getAccounts([valVoter], function(err, res) { ... });
 }); // document.getElementById('posting_key').addEventListener('input', function() );

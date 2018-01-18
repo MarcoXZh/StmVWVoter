@@ -6,6 +6,8 @@ var vote =  document.getElementById('vote');
 var op =  document.getElementById('option');
 var std = document.getElementById('std');
 var stdOp = document.getElementById('stdOp');
+var table = document.getElementById('table');
+var votes = document.getElementById('votes');
 
 
 /**
@@ -28,6 +30,68 @@ var decrypt = function(encrypted, password) {
 
 
 /**
+ * Sort and display data in the votes table
+ * @param {json}        options     the options for upvoting
+ * @param {string}      col         column name to be sorted
+ * @param {integer}     asc         1 for ascending; -1 for descending
+ */
+var sortTableData = function(options, col, asc) {
+    // Remove table data rows
+    var rows = document.getElementsByClassName('data-row');
+    while(rows.length > 0) {
+        rows[0].parentElement.removeChild(rows[0]);
+    } // while(rows.length > 0)
+    var sorter = natsort();
+    JSON.parse(votes.value).sort(function(a, b) {
+        return asc > 0 ? sorter(a[col], b[col]) : sorter(b[col], a[col]);
+    }).forEach(function(e) {
+        var tr = document.createElement('tr');
+        tr.setAttribute('class', 'data-row')
+        prefs.cols.forEach(function(c) {
+            var td = document.createElement('td');
+            td.innerHTML = e[c];
+            tr.appendChild(td);
+        }); // prefs.cols.forEach(function(c) { ... });
+        if (e.voter === options.voter) {
+            tr.style.backgroundColor = 'blue';
+            tr.style.color = 'white';
+        } // if (e.voter === options.voter)
+        table.appendChild(tr);
+    }); // JSON.parse().sort().forEach();
+}; // var sortTableData = function(options, col, asc) { ... };
+
+
+/**
+ * Display the table of voter information
+ * @param {json}        options     the options for upvoting
+ * @param {array}       vs          the list of votes
+ */
+var displayVotesTable = function(options, vs) {
+    // Save votes
+    votes.value = JSON.stringify(vs);
+
+    // Add table skeleton
+    var tr = document.createElement('tr');
+    prefs.cols.forEach(function(col) {
+        var header = document.createElement('th');
+        // header.setAttribute('class', 'col-' + col);
+        header.innerHTML = col;
+        header.addEventListener('click', function() {
+            var sort = parseInt(this.getAttribute('sort')) === 1
+                                    ? -1 : 1;
+            this.setAttribute('sort', sort);
+            sortTableData(options, col, sort);
+        }); // header.addEventListener('click', function() { ... });
+        tr.appendChild(header);
+    }); // prefs.cols.forEach(function(col) { ... });
+    table.appendChild(tr);
+
+    // Display table data, sorted by rshares descendent
+    sortTableData(options, 'rshares', -1);
+}; // var displayVotesTable = function(options, vs) { ... };
+
+
+/**
  * Prepare for upvoting the blog
  * @param {json}        options     the options for upvoting
  */
@@ -35,15 +99,17 @@ var prepare = function(options) {
     pgs.disabled = true;
     num.disabled = true;
     vote.disabled = true;
+    std.style.color = 'black';
+    std.innerHTML = 'Loading data ...';
     chrome.tabs.query({active:true, currentWindow:true}, function(tabs) {
         var substr = tabs[0].url.split('@').pop().split('/');
-        var author = substr[0];
+        var voter = substr[0];
         var permlink = substr[1];
-        if (!tabs[0].url.startsWith('https://steemit.com/') ||  !author || !permlink) {
+        if (!tabs[0].url.startsWith('https://steemit.com/') ||  !voter || !permlink) {
             std.innerHTML = 'No blogs found in this page';
             return ;
-        } // if (!author || !permlink)
-        steem.api.getActiveVotes(author, permlink, function(err, res) {
+        } // if (!voter || !permlink)
+        steem.api.getActiveVotes(voter, permlink, function(err, res) {
             if (err) {
                 std.style.color = 'red';
                 var msgs = [err.data.message]
@@ -52,15 +118,18 @@ var prepare = function(options) {
                 return ;
             } // if (err)
 
+            // Display the voters
+            displayVotesTable(options, res);
+
             // Blog already upvoted
-            if (res.map( (b)=>b.voter ).includes(options.author)) {
+            if (res.map( (b)=>b.voter ).includes(options.voter)) {
                 std.style.color = 'blue';
                 std.innerHTML = 'Blog already upvoted';
                 return ;
-            } // if (res.map( (b)=>b.voter ).includes(options.author))
+            } // if (res.map( (b)=>b.voter ).includes(options.voter))
 
             // Check if blog is 7 days ago
-            steem.api.getBlog(author, 1000000000, 500, function(err, res) {
+            steem.api.getBlog(voter, 1000000000, 500, function(err, res) {
                 if (err) {
                     std.style.color = 'red';
                     var msgs = [err.data.message]
@@ -69,7 +138,7 @@ var prepare = function(options) {
                     return ;
                 } // if (err)
 
-                var blog = res.filter( (e)=>e.comment.author===author&&e.comment.permlink===permlink )[0];
+                var blog = res.filter( (e)=>e.comment.voter===voter&&e.comment.permlink===permlink )[0];
                 steem.api.getConfig(function(err, re) {
                     if (err) {
                         std.style.color = 'red';
@@ -93,8 +162,8 @@ var prepare = function(options) {
                     std.style.color = 'black';
                     std.innerHTML = 'Blog ready for upvoting';
                 }); // steem.api.getConfig(function(err, re) { ... });
-            }); // steem.api.getBlog(author,  1000000000, 500, function(err, res) );
-        }); // steem.api.getActiveVotes(blog.author, blog.permlink, ... );
+            }); // steem.api.getBlog(voter,  1000000000, 500, function(err, res) );
+        }); // steem.api.getActiveVotes(blog.voter, blog.permlink, ... );
     }); // chrome.tabs.query({active:true, currentWindow:true}, function(tabs) );
 }; // var prepare = function(options, callback) { ... };
 
@@ -107,7 +176,7 @@ var upvote = function(options) {
     std.innerHTML = 'Upvoting ...';
     chrome.tabs.query({active:true, currentWindow:true}, function(tabs) {
         var substr = tabs[0].url.split('@').pop().split('/');
-        var author = substr[0];
+        var voter = substr[0];
         var permlink = substr[1];
 
         // Vote it
@@ -124,7 +193,7 @@ var upvote = function(options) {
             var weight = pgs.value * 100.0 / re.STEEMIT_100_PERCENT;
 
 
-            steem.broadcast.vote(options.posting_key, options.author, author, permlink,
+            steem.broadcast.vote(options.posting_key, options.voter, voter, permlink,
                                 Math.round(re.STEEMIT_100_PERCENT * weight),
                                 function(err, result) {
                 if (err) {
@@ -142,7 +211,7 @@ var upvote = function(options) {
 
 // Initialize
 chrome.storage.sync.get({
-                            author:         '',
+                            voter:          '',
                             posting_key:    '',
                             weight:         defaultWeight
                         }, function(re) {
@@ -151,13 +220,13 @@ chrome.storage.sync.get({
     pgs.value = re.weight;
     num.value = re.weight;
     re.posting_key = decrypt(re.posting_key, prefs.password);
-    if (re.author === '') {
+    if (re.voter === '') {
         stdOp.style.color = 'red';
         stdOp.innerHTML = ' NOT ready';
     } else {
         op.style.display = 'none';
-        stdOp.innerHTML = 'voter: @' + re.author;
-    } // else - if (re.author === '')
+        stdOp.innerHTML = 'voter: @' + re.voter;
+    } // else - if (re.voter === '')
     prepare(re);
 
     // Event listener -- pgs
@@ -180,15 +249,15 @@ chrome.storage.sync.get({
         if (chrome.runtime.openOptionsPage) {
             chrome.runtime.openOptionsPage(function() {
                 chrome.storage.sync.get({
-                                            author:         '',
+                                            voter:          '',
                                             posting_key:    '',
                                             weight:         defaultWeight
                                         }, function(re) {
                     re.posting_key = decrypt(re.posting_key, prefs.password);
-                    if (re.author === '') {
+                    if (re.voter === '') {
                         stdOp.style.color = 'red';
                         stdOp.innerHTML = 'Options NOT ready';
-                    } // if (re.author === '')  
+                    } // if (re.voter === '')  
                     stdOp.innerHTML = re.toString();
                 }); // chrome.storage.sync.get({ ... }, function() { ... });
             }); // chrome.runtime.openOptionsPage(function() { .. });
