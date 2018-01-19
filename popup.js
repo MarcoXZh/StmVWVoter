@@ -106,12 +106,13 @@ var prepare = function(options) {
             std.innerHTML = 'No blogs found in this page';
             return ;
         } // if (!tabs[0].url.startsWith('https://steemit.com/'))
+        var author = tabs[0].url.split('@').pop().split('/')[0];
 
-        // Query the title of the blog - it's used for identifying the blog
+        // Query the title and time of the blog - for identifying the blog
         chrome.tabs.sendMessage(tabs[0].id, {}, function(response) {
             var title = response.title;
             var time = new Date(response.time).getTime();
-            steem.api.getBlog(response.author, 1000000000, 500, function(err, res) {
+            steem.api.getBlog(author, 1000000000, 500, function(err, res) {
                 if (err) {
                     std.style.color = 'red';
                     var msgs = [err.data.message]
@@ -128,8 +129,8 @@ var prepare = function(options) {
                 })[0]; // var blog = res.filter( ... ).sort( ... )[0];
 
                 // Check the blog is voted or not
-                var permlink = blog.comment.permlink;
-                steem.api.getActiveVotes(response.author, blog.comment.permlink,
+                console.log(res.length, title);
+                steem.api.getActiveVotes(author, blog.comment.permlink,
                                          function(err, res) {
                     if (err) {
                         std.style.color = 'red';
@@ -174,8 +175,8 @@ var prepare = function(options) {
                         std.innerHTML = 'Blog ready for upvoting';
                     }); // steem.api.getConfig(function(err, re) { ... });
 
-                }); // steem.api.getActiveVotes(response.author, blog.comment.permlink, ... );
-            }); // steem.api.getBlog(response.author, 1000000000, 500, ... );
+                }); // steem.api.getActiveVotes(author, blog.comment.permlink, ... );
+            }); // steem.api.getBlog(author, 1000000000, 500, ... );
         }); // chrome.tabs.sendMessage(tabs[0].id, {}, function(response) { ... });
     }); // chrome.tabs.query({active:true, currentWindow:true}, function(tabs) );
 }; // var prepare = function(options, callback) { ... };
