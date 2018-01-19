@@ -101,35 +101,17 @@ var prepare = function(options) {
     vote.disabled = true;
     std.style.color = 'black';
     std.innerHTML = 'Loading data ...';
-    chrome.tabs.query({active:true, currentWindow:true}, function(tabs) {
-        var substr = tabs[0].url.split('@').pop().split('/');
-        var voter = substr[0];
-        var permlink = substr[1];
-        if (!tabs[0].url.startsWith('https://steemit.com/') ||  !voter || !permlink) {
+    chrome.tabs.query({ active:true, currentWindow:true }, function(tabs) {
+        if (!tabs[0].url.startsWith('https://steemit.com/')) {
             std.innerHTML = 'No blogs found in this page';
             return ;
-        } // if (!voter || !permlink)
-        steem.api.getActiveVotes(voter, permlink, function(err, res) {
-            if (err) {
-                std.style.color = 'red';
-                var msgs = [err.data.message]
-                                .concat(err.data.stack.map( (e)=>e.format.trim() ));
-                std.innerHTML = msgs.join('\n');
-                return ;
-            } // if (err)
+        } // if (!tabs[0].url.startsWith('https://steemit.com/'))
 
-            // Display the voters
-            displayVotesTable(options, res);
-
-            // Blog already upvoted
-            if (res.map( (b)=>b.voter ).includes(options.voter)) {
-                std.style.color = 'blue';
-                std.innerHTML = 'Blog already upvoted';
-                return ;
-            } // if (res.map( (b)=>b.voter ).includes(options.voter))
-
-            // Check if blog is 7 days ago
-            steem.api.getBlog(voter, 1000000000, 500, function(err, res) {
+        // Query the title of the blog - it's used for identifying the blog
+        chrome.tabs.sendMessage(tabs[0].id, {}, function(response) {
+            var title = response.title;
+            var time = new Date(response.time).getTime();
+            steem.api.getBlog(response.author, 1000000000, 500, function(err, res) {
                 if (err) {
                     std.style.color = 'red';
                     var msgs = [err.data.message]
@@ -138,8 +120,17 @@ var prepare = function(options) {
                     return ;
                 } // if (err)
 
-                var blog = res.filter( (e)=>e.comment.voter===voter&&e.comment.permlink===permlink )[0];
-                steem.api.getConfig(function(err, re) {
+                // Target blog is the one with the title and 'created' closest to the time
+                var blog = res.filter( (e)=>e.comment.title===title)
+                              .sort(function(a, b) {
+                    return Math.abs(new Date(a.comment.created + 'Z').getTime() - time) -
+                           Math.abs(new Date(b.comment.created + 'Z').getTime() - time);
+                })[0]; // var blog = res.filter( ... ).sort( ... )[0];
+
+                // Check the blog is voted or not
+                var permlink = blog.comment.permlink;
+                steem.api.getActiveVotes(response.author, blog.comment.permlink,
+                                         function(err, res) {
                     if (err) {
                         std.style.color = 'red';
                         var msgs = [err.data.message]
@@ -148,22 +139,44 @@ var prepare = function(options) {
                         return ;
                     } // if (err)
 
-                    if (new Date(blog.comment.cashout_time + 'Z').getTime() <=
-                        new Date().getTime() + 12*3600*1000) {
-                        std.style.color = 'blue';
-                        std.innerHTML = 'Blog closed for voting';
-                        return ;
-                    } // if ( ... )
+                    // Display the voters
+                    displayVotesTable(options, res);
 
-                    // Blog available for upvoting
-                    pgs.disabled = false;
-                    num.disabled = false;
-                    vote.disabled = false;
-                    std.style.color = 'black';
-                    std.innerHTML = 'Blog ready for upvoting';
-                }); // steem.api.getConfig(function(err, re) { ... });
-            }); // steem.api.getBlog(voter,  1000000000, 500, function(err, res) );
-        }); // steem.api.getActiveVotes(blog.voter, blog.permlink, ... );
+                    // Blog already upvoted
+                    if (res.map( (b)=>b.voter ).includes(options.voter)) {
+                        std.style.color = 'blue';
+                        std.innerHTML = 'Blog already upvoted';
+                        return ;
+                    } // if (res.map( (b)=>b.voter ).includes(options.voter))
+
+                    // Check if blog is 7 days ago
+                    steem.api.getConfig(function(err, re) {
+                        if (err) {
+                            std.style.color = 'red';
+                            var msgs = [err.data.message]
+                                            .concat(err.data.stack.map( (e)=>e.format.trim() ));
+                            std.innerHTML = msgs.join('\n');
+                            return ;
+                        } // if (err)
+
+                        if (new Date(blog.comment.cashout_time + 'Z').getTime() <=
+                            new Date().getTime() + 12*3600*1000) {
+                            std.style.color = 'blue';
+                            std.innerHTML = 'Blog closed for voting';
+                            return ;
+                        } // if ( ... )
+
+                        // Blog available for upvoting
+                        pgs.disabled = false;
+                        num.disabled = false;
+                        vote.disabled = false;
+                        std.style.color = 'black';
+                        std.innerHTML = 'Blog ready for upvoting';
+                    }); // steem.api.getConfig(function(err, re) { ... });
+
+                }); // steem.api.getActiveVotes(response.author, blog.comment.permlink, ... );
+            }); // steem.api.getBlog(response.author, 1000000000, 500, ... );
+        }); // chrome.tabs.sendMessage(tabs[0].id, {}, function(response) { ... });
     }); // chrome.tabs.query({active:true, currentWindow:true}, function(tabs) );
 }; // var prepare = function(options, callback) { ... };
 
