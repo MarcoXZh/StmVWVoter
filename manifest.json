@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name":             "SteemitVWVoter",
     "author":           "MarcoXZh3",
-    "version":          "0.1.5",
+    "version":          "0.1.6",
 
     "description":      "A Steemit voter allowing all users to vote with customized voting weight (VW)",
     "icons": {

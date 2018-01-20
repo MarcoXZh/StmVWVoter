@@ -112,6 +112,10 @@ var prepare = function(options) {
         chrome.tabs.sendMessage(tabs[0].id, {}, function(response) {
             var title = response.title;
             var time = new Date(response.time).getTime();
+            if (!title) {
+                std.innerHTML = 'No blogs found in this page';
+                return ;
+            } // if (!title)
             steem.api.getBlog(author, 1000000000, 500, function(err, res) {
                 if (err) {
                     std.style.color = 'red';
@@ -129,7 +133,6 @@ var prepare = function(options) {
                 })[0]; // var blog = res.filter( ... ).sort( ... )[0];
 
                 // Check the blog is voted or not
-                console.log(res.length, title);
                 steem.api.getActiveVotes(author, blog.comment.permlink,
                                          function(err, res) {
                     if (err) {
